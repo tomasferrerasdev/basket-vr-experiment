@@ -31,7 +31,7 @@ export default function Home() {
         <Staging />
         <XR store={store}>
           <Locomotion />
-          <Physics debug>
+          <Physics debug gravity={[0, -9.82, 0]}>
             <PhysicsHandle>
               <Gltf scale={0.2} src="/ball.glb" />
             </PhysicsHandle>
@@ -55,7 +55,7 @@ const Staging = () => {
 const Walls = () => {
   return (
     <>
-      {/* Floor */}
+      {/* floor */}
       <RigidBody includeInvisible colliders="cuboid" type="fixed">
         <mesh visible={true} scale={[200, 1, 200]} position={[0, -0.5, 0]}>
           <boxGeometry />
@@ -101,7 +101,17 @@ function PhysicsHandle({ children }: { children?: ReactNode }) {
     []
   );
   return (
-    <RigidBody ref={ref} colliders="ball" type="dynamic" position={[0, 1, 0]}>
+    <RigidBody
+      ref={ref}
+      colliders="ball"
+      type="dynamic"
+      position={[0, 1, 0]}
+      restitution={1.2}
+      friction={0.7}
+      linearDamping={0.15}
+      angularDamping={0.1}
+      mass={0.6}
+    >
       <group ref={groupRef}>
         <Handle
           multitouch={false}
