@@ -10,20 +10,79 @@ import {
   XROrigin,
 } from "@react-three/xr";
 import { Stage } from "./stage";
-import { ReactNode, RefObject, useMemo, useRef } from "react";
+import {
+  ReactNode,
+  RefObject,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { Group, Object3D } from "three";
 import { CustomHand } from "./custom-hands";
 import { Handedness } from "@/interfaces/enum";
+import { GestureEvent } from "@/utils/gesture-detection";
+import { GestureEffects } from "./gesture-effects";
+
+// Type for hand component props in XR store
+interface HandComponentProps {
+  onGestureDetected?: (event: GestureEvent) => void;
+}
+
+// Callback handlers for gesture detection
+const useGestureHandlers = () => {
+  const [leftHandGestures, setLeftHandGestures] = useState<{
+    [key: string]: boolean;
+  }>({});
+  const [rightHandGestures, setRightHandGestures] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  const handleLeftHandGesture = useCallback((event: GestureEvent) => {
+    setLeftHandGestures((prev) => ({
+      ...prev,
+      [event.gesture]: event.active,
+    }));
+  }, []);
+
+  const handleRightHandGesture = useCallback((event: GestureEvent) => {
+    setRightHandGestures((prev) => ({
+      ...prev,
+      [event.gesture]: event.active,
+    }));
+  }, []);
+
+  return {
+    leftHandGestures,
+    rightHandGestures,
+    handleLeftHandGesture,
+    handleRightHandGesture,
+  };
+};
 
 const store = createXRStore({
   foveation: 0,
   hand: {
-    left: () => <CustomHand handedness={Handedness.Left} useTeleport />,
-    right: () => <CustomHand handedness={Handedness.Right} />,
+    left: (props: HandComponentProps) => (
+      <CustomHand
+        handedness={Handedness.Left}
+        useTeleport
+        onGestureDetected={props.onGestureDetected}
+      />
+    ),
+    right: (props: HandComponentProps) => (
+      <CustomHand
+        handedness={Handedness.Right}
+        onGestureDetected={props.onGestureDetected}
+      />
+    ),
   },
 });
 
 export const XRWrapper = () => {
+  const { handleLeftHandGesture, handleRightHandGesture } =
+    useGestureHandlers();
+
   return (
     <>
       <PointerEvents />
@@ -35,10 +94,57 @@ export const XRWrapper = () => {
             <Gltf scale={1} src="/models/ball.glb" />
           </PhysicsHandle>
           <Stage />
+
+          {/* Gesture Effects */}
+          <group position={[0, 1.5, -0.5]}>
+            <GestureEffects
+              handedness="LEFT"
+              onGestureDetected={handleLeftHandGesture}
+            />
+            <GestureEffects
+              handedness="RIGHT"
+              onGestureDetected={handleRightHandGesture}
+            />
+          </group>
         </Physics>
+
+        {/* Pass gesture handlers to hands */}
+        <HandGestureProvider
+          onLeftHandGesture={handleLeftHandGesture}
+          onRightHandGesture={handleRightHandGesture}
+        />
       </XR>
     </>
   );
+};
+
+// Component to provide gesture handlers to hands
+const HandGestureProvider = ({
+  onLeftHandGesture,
+  onRightHandGesture,
+}: {
+  onLeftHandGesture: (event: GestureEvent) => void;
+  onRightHandGesture: (event: GestureEvent) => void;
+}) => {
+  store.setState({
+    hand: {
+      left: (props: HandComponentProps) => (
+        <CustomHand
+          handedness={Handedness.Left}
+          useTeleport
+          onGestureDetected={onLeftHandGesture}
+        />
+      ),
+      right: (props: HandComponentProps) => (
+        <CustomHand
+          handedness={Handedness.Right}
+          onGestureDetected={onRightHandGesture}
+        />
+      ),
+    },
+  });
+
+  return null;
 };
 
 function PhysicsHandle({ children }: { children?: ReactNode }) {

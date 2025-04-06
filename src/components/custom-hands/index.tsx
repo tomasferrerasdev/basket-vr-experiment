@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useCallback } from "react";
 import {
   CombinedPointer,
   DefaultXRHandGrabPointer,
@@ -8,6 +8,7 @@ import {
 } from "@react-three/xr";
 import { Handedness } from "@/interfaces/enum";
 import { ShadedHand } from "./shaded-hands";
+import { GestureEvent } from "@/utils/gesture-detection";
 
 interface CustomHandProps {
   handedness?: Handedness;
@@ -15,6 +16,7 @@ interface CustomHandProps {
   showTouch?: boolean;
   useRay?: boolean;
   useTeleport?: boolean;
+  onGestureDetected?: (event: GestureEvent) => void;
 }
 
 export const CustomHand: React.FC<CustomHandProps> = ({
@@ -23,11 +25,29 @@ export const CustomHand: React.FC<CustomHandProps> = ({
   showTouch = true,
   useTeleport = false,
   useRay = true,
+  onGestureDetected,
 }) => {
+  const handleGesture = useCallback(
+    (event: GestureEvent) => {
+      // Forward the gesture event to the parent component
+      if (onGestureDetected) {
+        onGestureDetected(event);
+      }
+
+      // Log for debugging purposes
+      console.log(
+        `${handedness} hand ${event.gesture} gesture: ${
+          event.active ? "DETECTED" : "ENDED"
+        }`
+      );
+    },
+    [handedness, onGestureDetected]
+  );
+
   return (
     <>
       <Suspense fallback={null}>
-        <ShadedHand handedness={handedness} />
+        <ShadedHand handedness={handedness} onGestureDetected={handleGesture} />
       </Suspense>
       <CombinedPointer>
         {useRay && (

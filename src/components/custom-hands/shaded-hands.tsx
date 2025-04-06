@@ -1,6 +1,14 @@
 import { useFrame, useLoader } from "@react-three/fiber";
 import { useXRInputSourceStateContext, useXRSpace } from "@react-three/xr";
-import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Mesh,
   Object3D,
@@ -12,6 +20,7 @@ import {
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Handedness } from "@/interfaces/enum";
+import { GestureEvent, GestureTracker } from "@/utils/gesture-detection";
 
 const joints: Array<XRHandJoint> = [
   "wrist",
@@ -91,10 +100,11 @@ function rgbToThreeColor(rgbString: string): Color {
 
 export type XRHandOptions = {
   handedness: Handedness.Right | Handedness.Left;
+  onGestureDetected?: (event: GestureEvent) => void;
 };
 
 export const ShadedHand = forwardRef<Object3D, XRHandOptions>(
-  ({ handedness }, ref) => {
+  ({ handedness, onGestureDetected }, ref) => {
     const state = useXRInputSourceStateContext("hand");
     const gltf = useLoader(
       GLTFLoader,
@@ -103,6 +113,16 @@ export const ShadedHand = forwardRef<Object3D, XRHandOptions>(
         : "/models/leftgradient.glb"
     );
     const model = useMemo(() => cloneXRHandGltf(gltf), [gltf]);
+    const gestureTrackerRef = useRef<GestureTracker>(new GestureTracker());
+
+    // Set up gesture detection callback
+    useEffect(() => {
+      const tracker = gestureTrackerRef.current;
+
+      if (onGestureDetected) {
+        tracker.onGesture(onGestureDetected);
+      }
+    }, [onGestureDetected]);
 
     const customShaderMaterialRef = useRef<ShaderMaterial>(
       new ShaderMaterial({
@@ -272,6 +292,9 @@ export const ShadedHand = forwardRef<Object3D, XRHandOptions>(
       void state;
       void delta;
       update(frame);
+
+      // Update gesture detection
+      gestureTrackerRef.current.update(model);
     });
 
     return <primitive object={model} />;
