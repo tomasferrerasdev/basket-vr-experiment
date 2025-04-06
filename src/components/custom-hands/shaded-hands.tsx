@@ -277,3 +277,5 @@ export const ShadedHand = forwardRef<Object3D, XRHandOptions>(
     return <primitive object={model} />;
   }
 );
+
+export default ShadedHand;
