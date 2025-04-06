@@ -278,4 +278,4 @@ export const ShadedHand = forwardRef<Object3D, XRHandOptions>(
   }
 );
 
-export default ShadedHand;
+ShadedHand.displayName = "ShadedHand";
