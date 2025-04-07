@@ -10,20 +10,28 @@ import {
   XROrigin,
 } from "@react-three/xr";
 import { Stage } from "./stage";
-import { ReactNode, RefObject, useMemo, useRef } from "react";
+import { ReactNode, RefObject, useEffect, useMemo, useRef } from "react";
 import { Group, Object3D } from "three";
 import { CustomHand } from "./custom-hands";
 import { Handedness } from "@/interfaces/enum";
 
-const store = createXRStore({
-  foveation: 0,
-  hand: {
-    left: () => <CustomHand handedness={Handedness.Left} useTeleport />,
-    right: () => <CustomHand handedness={Handedness.Right} />,
-  },
-});
+export const XRWrapper = ({ isVR }: { isVR: boolean }) => {
+  const store = createXRStore({
+    foveation: 0,
 
-export const XRWrapper = () => {
+    hand: {
+      left: () => <CustomHand handedness={Handedness.Left} useTeleport />,
+      right: () => <CustomHand handedness={Handedness.Right} />,
+    },
+  });
+
+  useEffect(() => {
+    console.log("isVR", isVR);
+    if (isVR) {
+      store.enterVR();
+    }
+  }, [isVR]);
+
   return (
     <>
       <PointerEvents />
